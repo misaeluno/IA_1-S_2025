@@ -153,10 +153,15 @@ class MiVentana(QMainWindow):
         self.boton_comprobacion.clicked.connect(self.realizar_comprobacion)
         layout_derecha.addWidget(self.boton_comprobacion)
 
-        # Nuevo botón para cargar datos de ML
+        # Botón para cargar datos de ML
         self.boton_cargar_ml = QPushButton("Cargar Datos ML")
         self.boton_cargar_ml.clicked.connect(self.cargar_datos_ml)
         layout_derecha.addWidget(self.boton_cargar_ml)
+
+        # NUEVO: Botón para guardar datos de ML
+        self.boton_guardar_ml = QPushButton("Guardar Datos ML")
+        self.boton_guardar_ml.clicked.connect(self.guardar_datos_ml)
+        layout_derecha.addWidget(self.boton_guardar_ml)
         # --- FIN NUEVOS BOTONES ---
         
         # Ocultar inicialmente los botones de marco, zoom, guardar y comprobación
@@ -164,8 +169,7 @@ class MiVentana(QMainWindow):
         self.zoom_label.setVisible(False)
         self.boton_guardar.setVisible(False)
         self.boton_comprobacion.setVisible(False)
-        # El botón de cargar ML puede estar siempre visible o solo cuando se carga una imagen,
-        # lo dejaremos visible por ahora.
+        self.boton_guardar_ml.setVisible(False) # Ocultar inicialmente el botón de guardar ML
 
         # Botón "Salir"
         boton_salir = QPushButton("Salir")
@@ -368,22 +372,76 @@ class MiVentana(QMainWindow):
         print("Botón 'Comprobación' presionado. (Funcionalidad pendiente)")
         QMessageBox.information(self, "Comprobación", "El botón 'Comprobación' fue presionado. Por ahora, no hace nada.")
 
+    def guardar_datos_ml(self):
+        """
+        Guarda las matrices X_data y y_labels en archivos de texto para su uso futuro.
+        """
+        if self.X_data is None or self.y_labels is None:
+            QMessageBox.warning(self, "Guardar Datos ML", "No hay datos de ML cargados para guardar.")
+            return
+
+        x_file_path = os.path.join(os.path.dirname(__file__), "entrenamiento_X.txt")
+        y_file_path = os.path.join(os.path.dirname(__file__), "entrenamiento_y.txt")
+
+        try:
+            # Guardar X_data. Convertir a array si es necesario para savetxt, aunque asmatrix funciona.
+            # Usar un formato de alta precisión para evitar pérdida de datos con FFT.
+            np.savetxt(x_file_path, self.X_data, fmt='%.18e', delimiter=',')
+            # Guardar y_labels. Asegurarse de que sea 1D para savetxt si es necesario, aunque asmatrix funciona.
+            np.savetxt(y_file_path, self.y_labels, fmt='%d', delimiter=',') # Etiquetas son enteros
+
+            QMessageBox.information(self, "Guardar Datos ML", 
+                                    f"Datos de entrenamiento guardados exitosamente en:\n"
+                                    f"{x_file_path}\n{y_file_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error al Guardar Datos ML", f"No se pudieron guardar los datos: {e}")
+            print(f"Error al guardar datos ML: {e}")
+
+
     def cargar_datos_ml(self):
         """
         Carga y preprocesa imágenes de 15x15 píxeles desde la carpeta 'Data_set'
         (con subcarpetas C1-C6) con FFT para crear las matrices X y y.
+        Si los archivos de entrenamiento ya existen, los carga directamente.
         """
+        x_file_path = os.path.join(os.path.dirname(__file__), "entrenamiento_X.txt")
+        y_file_path = os.path.join(os.path.dirname(__file__), "entrenamiento_y.txt")
+
+        # Intentar cargar desde archivos si existen
+        if os.path.exists(x_file_path) and os.path.exists(y_file_path):
+            try:
+                QMessageBox.information(self, "Cargando Datos ML", 
+                                        "Cargando datos de entrenamiento desde archivos guardados. Esto es más rápido...")
+                self.X_data = np.asmatrix(np.loadtxt(x_file_path, delimiter=','))
+                self.y_labels = np.asmatrix(np.loadtxt(y_file_path, delimiter=','))
+                
+                # Asegurarse de que y_labels sea una matriz fila (1xN) si se cargó como 1D
+                if self.y_labels.ndim == 1:
+                    self.y_labels = self.y_labels.reshape(1, -1)
+
+                QMessageBox.information(self, "Datos ML Cargados", 
+                                        f"Datos de entrenamiento cargados desde archivos.\n"
+                                        f"Dimensión de X: {self.X_data.shape}\n"
+                                        f"Dimensión de y: {self.y_labels.shape}")
+                self.boton_guardar_ml.setVisible(True) # Mostrar el botón de guardar
+                print(f"X (primeras 5 filas):\n{self.X_data[:min(5, self.X_data.shape[0]), :min(5, self.X_data.shape[1])]}...")
+                print(f"y (primeros 10 elementos):\n{self.y_labels[:, :min(10, self.y_labels.shape[1])]}")
+                return # Salir de la función si los datos se cargaron con éxito
+            except Exception as e:
+                QMessageBox.warning(self, "Error al Cargar Datos ML", 
+                                    f"Error al cargar datos desde archivos, se procederá a procesar las imágenes: {e}")
+                print(f"Error al cargar datos desde archivos: {e}")
+                # Si hay un error al cargar, continuar para procesar desde imágenes
+
+        # Si los archivos no existen o hubo un error al cargarlos, procesar desde imágenes
         image_size = 15
         vector_dim = image_size * image_size # 225
 
         X_list = []
         y_list = []
 
-        # Definir la ruta base donde se encuentra la carpeta Data_set
-        # Asegúrate de que Data_set esté en el mismo directorio que tu script .py
         base_path = os.path.join(os.path.dirname(__file__), "Data_set")
 
-        # Mapeo de etiquetas de carpeta a valores numéricos
         class_labels = {
             "C1": 1, # agua
             "C2": 2, # vegetación
@@ -398,7 +456,6 @@ class MiVentana(QMainWindow):
 
         total_images_loaded = 0
         
-        # Iterar sobre cada carpeta de clase
         for class_folder_name, label in class_labels.items():
             folder_path = os.path.join(base_path, class_folder_name)
             
@@ -407,58 +464,42 @@ class MiVentana(QMainWindow):
                 QMessageBox.warning(self, "Error de Ruta", f"La carpeta '{folder_path}' no se encontró. Asegúrate de que 'Data_set' y sus subcarpetas estén en el mismo directorio que el script.")
                 continue
 
-            # Iterar sobre los archivos dentro de la carpeta de clase
             for filename in os.listdir(folder_path):
                 if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
                     image_path = os.path.join(folder_path, filename)
                     try:
-                        # Cargar la imagen usando Pillow
                         img = Image.open(image_path)
                         
-                        # Asegurarse de que la imagen es válida antes de procesar
                         if img is None:
                             print(f"Error: No se pudo abrir la imagen {image_path}. Puede estar corrupta o no ser un formato válido.")
                             continue
 
-                        # Convertir a escala de grises
                         img = img.convert('L')
-                        
-                        # Redimensionar a 15x15 píxeles (si no lo está ya)
                         img = img.resize((image_size, image_size))
                         
-                        # Convertir la imagen PIL a un array NumPy
                         image_array = np.array(img)
                         
-                        # Verificar que image_array es 2D y tiene el tamaño esperado para FFT
                         if image_array.ndim != 2 or image_array.shape != (image_size, image_size):
                              print(f"Error: La imagen {image_path} no tiene el formato esperado (15x15 en escala de grises) después de la conversión. Dimensiones: {image_array.shape}")
                              continue
 
-                        # Aplicar FFT 2D
                         fft_image = fft2(image_array)
-                        # Centrar la componente de frecuencia cero
                         fft_shifted = fftshift(fft_image)
-                        # Tomar la magnitud del espectro de Fourier
                         fft_magnitude = np.abs(fft_shifted)
 
-                        # "Desenrrollar" la cuadrícula de 15x15 en un vector de 225
                         vectorized_image = fft_magnitude.flatten()
                         X_list.append(vectorized_image)
 
-                        # Asignar la etiqueta correspondiente a la carpeta
                         y_list.append(label)
                         total_images_loaded += 1
 
                     except Exception as e:
                         print(f"Error al procesar la imagen {image_path}: {e}")
-                        # No mostrar QMessageBox aquí para evitar inundar al usuario con muchos mensajes
                         continue
 
-        # Convertir las listas a matrices NumPy como se especifica
-        # Asegurarse de que X_list no esté vacía antes de convertir a np.asmatrix
         if X_list:
-            self.X_data = np.asmatrix(X_list) # CAMBIO: np.mat a np.asmatrix
-            self.y_labels = np.asmatrix(y_list) # CAMBIO: np.mat a np.asmatrix
+            self.X_data = np.asmatrix(X_list)
+            self.y_labels = np.asmatrix(y_list)
 
             QMessageBox.information(self, "Datos ML Cargados", 
                                     f"Datos de entrenamiento cargados y preprocesados.\n"
@@ -468,11 +509,16 @@ class MiVentana(QMainWindow):
             
             print(f"X (primeras 5 filas):\n{self.X_data[:min(5, self.X_data.shape[0]), :min(5, self.X_data.shape[1])]}...")
             print(f"y (primeros 10 elementos):\n{self.y_labels[:, :min(10, self.y_labels.shape[1])]}")
+            
+            # NUEVO: Guardar los datos recién procesados para futuras ejecuciones
+            self.guardar_datos_ml()
+            self.boton_guardar_ml.setVisible(True) # Asegurarse de que el botón de guardar esté visible
         else:
             self.X_data = None
             self.y_labels = None
             QMessageBox.warning(self, "Carga de Datos ML", "No se encontraron imágenes válidas para cargar en el conjunto de datos.")
             print("No se encontraron imágenes válidas para cargar en el conjunto de datos.")
+            self.boton_guardar_ml.setVisible(False) # Ocultar el botón si no hay datos para guardar
 
 
 # Función de activación
@@ -492,14 +538,14 @@ def init_weights(layers, epsilon):
     for i in range(len(layers)-1):
         w = np.random.rand(layers[i+1], layers[i]+1)
         w = w * 2*epsilon - epsilon
-        weights.append(np.asmatrix(w)) # CAMBIO: np.mat a np.asmatrix
+        weights.append(np.asmatrix(w))
     return weights
 
 # Red Neuronal
 #==============
 def fit(X, Y, w):
     # Inicialización de cada parámetro con gradiente igual a 0
-    w_grad = ([np.asmatrix(np.zeros(np.shape(w[i]))) # CAMBIO: np.mat a np.asmatrix
+    w_grad = ([np.asmatrix(np.zeros(np.shape(w[i])))
               for i in range(len(w))])  # len(w) es igual al número de capas
     m, n = X.shape
     h_total = np.zeros((m, 1))  # Valor predecido de todas las muestras, m*1, probabilidad
@@ -511,7 +557,7 @@ def fit(X, Y, w):
         a = x
         a_s = []
         for j in range(len(w)):
-            a = np.asmatrix(np.append(1, a.T)).T # CAMBIO: np.mat a np.asmatrix
+            a = np.asmatrix(np.append(1, a.T)).T # Añadir bias y transponer
             a_s.append(a)  # Aquí se guarda el valor a de la capa L-1 anterior.
             z = w[j] * a
             a = sigmoid(z)
