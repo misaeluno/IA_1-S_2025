@@ -353,7 +353,7 @@ class MiVentana(QMainWindow):
 
         # Abrir diálogo para guardar el archivo
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar imagen de zoom en B/N (15x15)", "zoom_15x15_bn.png",
+            self, "Guardar imagen de zoom en B/N (15x15)", "IC-_000.png",
             "Imágenes PNG (*.png);;Todos los archivos (*)"
         )
 
