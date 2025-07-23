@@ -119,9 +119,9 @@ class MiVentana(QMainWindow):
         boton_imagen.clicked.connect(self.abrir_imagen)
         layout_derecha.addWidget(boton_imagen)
         
-        self.boton_marco = QPushButton("Marco 15x15")
+        self.boton_marco = QPushButton("Marco 15x15") # Defined as self.boton_marco
         self.boton_marco.clicked.connect(self.al_marco15x15)
-        layout_derecha.addWidget(self.boton_marco)
+        layout_derecha.addWidget(self.boton_marco) # Corrected: used self.boton_marco
         
         self.zoom_label = QLabel()
         self.zoom_label.setFixedSize(200, 100)
@@ -372,11 +372,29 @@ class MiVentana(QMainWindow):
         # 2. Preprocesar la región para la predicción
         image_size = 15
         
-        # Asegurarse de que la imagen sea de 15x15 antes de convertir a array
-        region_15x15_pil = region_15x15_pixmap.toImage().convertToFormat(QImage.Format_Grayscale8)
-        region_15x15_pil = Image.fromqimage(region_15x15_pil).resize((image_size, image_size))
+        # Convertir QPixmap a QImage
+        qimage = region_15x15_pixmap.toImage()
         
-        image_array = np.array(region_15x15_pil)
+        # Convertir QImage a escala de grises si no lo está ya
+        if qimage.format() != QImage.Format_Grayscale8:
+            qimage = qimage.convertToFormat(QImage.Format_Grayscale8)
+        
+        # Asegurarse de que sea 15x15. La región ya debería ser de este tamaño, pero escalamos por seguridad.
+        if qimage.width() != image_size or qimage.height() != image_size:
+            qimage = qimage.scaled(image_size, image_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        # Convertir QImage a NumPy array de forma robusta
+        # Usamos np.frombuffer con qimage.constBits() para mayor fiabilidad
+        # Aseguramos que el buffer tenga el tamaño esperado (width * height * bytes_per_pixel)
+        bytes_per_pixel = qimage.bytesPerLine() // qimage.width()
+        expected_size = qimage.width() * qimage.height() * bytes_per_pixel
+        
+        ptr = qimage.constBits()
+        ptr.setsize(expected_size) # Asegurar que el tamaño del buffer es el correcto
+        
+        # Crear el array de NumPy
+        image_array = np.frombuffer(ptr, np.uint8).reshape(qimage.height(), qimage.width())
+
 
         fft_image = fft2(image_array)
         fft_shifted = fftshift(fft_image)
@@ -565,7 +583,7 @@ class MiVentana(QMainWindow):
         
         epochs = 5000 # número de iteraciones (puedes ajustar)
         alpha = 0.5 # tasa de aprendizaje (puedes ajustar)
-        epsilon = 0.1 # para inicializar los pesos (rango de pesos aleatorios)
+        epsilon = 0.05 # Reducido para mitigar overflow en sigmoid
 
         # Inicializar pesos
         self.trained_weights = init_weights(layers, epsilon)
