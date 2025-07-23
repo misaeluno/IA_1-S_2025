@@ -92,35 +92,50 @@ for i in range(epochs):
 
 # Gráfico de la Función de Costo, J
 #===================================
-plt.plot(result.get('J'))
-plt.xlabel('Número de iteraciones (epocas)')
-plt.ylabel('Función de Costo, J')
-plt.show()
+# Resultados
+# ============
 
-#print("Matrices de pesos inicial (aleatorias) y final (despues de iteraciones):")
-#print(w_s)
+# Si usas NumPy, asegúrate de haberlo importado al principio de tu script
+# import numpy as np
 
-for i in [0, epochs-1]:
-    if i==0:
-        print('PESOS INICIALES ALEATORIOS')
+# Asegúrate de que las variables 'w_s', 'epochs', y 'result'
+# estén definidas y contengan los datos correctos de tu entrenamiento.
+# Por ejemplo:
+# w_s = {'w_0': [np.array([[...]]), np.array([[...]])], 'w_4999': [np.array([[...]]), np.array([[...]])]}
+# epochs = 5000
+# result = {'J': [...], 'h': [np.array([[...]]), ..., np.array([[...]])]}
+
+
+print("---")
+print("Matrices de pesos inicial (aleatorias) y final (después de iteraciones):")
+print("---")
+
+for i in [0, epochs - 1]:
+    if i == 0:
+        print('\nPESOS INICIALES ALEATORIOS')
         print('==========================')
-    if i==(epochs-1):
-        print('PESOS FINALES DE RED NEURONAL ENTRENADA')
-        print('=======================================')        
-    j = len(w_s)
-    for j in range(1,j+1):
-        display(Math(r'\Theta^{(%d)} = ' % (j)))
-        print(w_s['w_' + str(i)][j-1]) #w_s['w_0'][0],w_s['w_0'][1], w_s['w_4999'][0], w_s['w_4999'][1]
-    print('')
+    elif i == (epochs - 1): # Usamos elif porque solo puede ser uno de los dos
+        print('\nPESOS FINALES DE RED NEURONAL ENTRENADA')
+        print('=======================================')
 
+    # Itera sobre los elementos guardados en w_s para la época actual
+    # w_s['w_' + str(i)] es una lista de matrices de gradientes
+    for j_idx, weight_matrix in enumerate(w_s['w_' + str(i)]):
+        # Usamos j_idx + 1 para que el contador de capa sea 1-basado
+        print(f'Theta^({j_idx + 1}) = ')
+        print(weight_matrix) # Imprime la matriz de pesos
+    print('') # Salto de línea para separar las secciones
+
+print('---')
 print('PREDICCIÓN INICIAL')
 print('==================')
-display(Math(r'h_\Theta(x) = ' ))
+print('h_Theta(x) = ')
 print(result.get('h')[0])
 
 print('')
 
+print('---')
 print('PREDICCIÓN FINAL ESTIMADA')
 print('=========================')
-display(Math(r'h_\Theta(x) = ' ))
+print('h_Theta(x) = ')
 print(result.get('h')[-1])
