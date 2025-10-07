@@ -21,7 +21,7 @@ def sumatori(beta0: float, beta1: float, y: np.array, x: np.array):
 
 # Leer datos desde archivo
 lista = []
-with open('C:/Users/DEATH/Desktop/IA/Tarea_3/data1.txt') as archivo:
+with open('Tarea_3\data1.txt') as archivo:
     for i in archivo:
         #lista se transforma en una matriz tipo string
         lista.append(i.strip(" ").strip("\n").split(","))
