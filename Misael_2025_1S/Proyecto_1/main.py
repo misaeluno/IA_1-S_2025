@@ -23,7 +23,7 @@ def gradientDescent(X: np.array, y: np.array, theta: np.array, alpha: float, num
     #guardara los datos en forma matriz
     J_history = np.zeros(num_iters)
     theta_history = []
-    print(theta_history[0])
+    #print(theta_history[0])
     #metodo de aprendisaje segun un for
     for i in range(num_iters):
         #Error cuadratico medio
