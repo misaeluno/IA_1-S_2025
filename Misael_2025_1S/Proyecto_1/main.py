@@ -39,7 +39,7 @@ def gradientDescent(X: np.array, y: np.array, theta: np.array, alpha: float, num
 
 # Leer datos
 lista = []
-with open('C:/Users/DEATH/Desktop/IA/data1.txt') as archivo:
+with open('C:/Users/DEATH/Desktop/Materia - UDA/IA/Misael_2025_1S/Proyecto_1/data1.txt') as archivo:
     for i in archivo:
         lista.append(i.strip().split(","))
 matriz = np.array(lista, dtype=float)
@@ -114,6 +114,7 @@ for i in range(N):
     #grafico 3
     theta_0_malla.append(theta[0])
     theta_1_malla.append(theta[1])
+
     ax3.plot(theta_0_malla, theta_1_malla, 'r-', alpha=0.6)
     punto.set_data([theta[0]], [theta[1]])
     #grafico 4

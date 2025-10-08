@@ -25,7 +25,7 @@ def gradientDescent(X: np.array, y: np.array, theta: np.array, alpha: float, num
     return theta, J_history, theta_history
 
 lista = []
-with open('C:/Users/DEATH/Desktop/IA/data1.txt') as archivo:
+with open('C:/Users/DEATH/Desktop/Materia - UDA/IA/Misael_2025_1S/Proyecto_1/data1.txt') as archivo:
     for i in archivo:
         lista.append(i.strip().split(","))
         
@@ -67,11 +67,15 @@ theta_1_malla = []
 
 for i in range(N):
     theta = theta_history[i]
+    
     y_line = theta[0] + theta[1] * x_line
     linea_plot.set_data(x_line, y_line)
+
     linea_costo.set_data(range(i + 1), J_history[:i + 1])
+
     theta_0_malla.append(theta[0])
     theta_1_malla.append(theta[1])
+
     ax3.plot(theta_0_malla, theta_1_malla, 'r-', alpha=0.6)
     punto.set_data([theta[0]], [theta[1]])
     ax4.plot(theta_1_malla, theta_0_malla, J_history[:i+1], color='Orange', marker='o')
