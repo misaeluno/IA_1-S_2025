@@ -6,7 +6,7 @@ import time
 
 #crea Lista tipo list para guardar los datos del documento
 lista=[]
-with open('C:/Users/DEATH/Desktop/IA/Tarea_1/data1.txt') as archivo:
+with open('IA\Misael_2025_1S\Tarea_1\data1.txt') as archivo:
     for i in archivo:
         # agrega a la Lista los datos del txt y los separa segun , ademas elimna el \n y espacios
         lista.append(i.strip(" ").strip("\n").split(","))

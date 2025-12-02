@@ -5,7 +5,7 @@ import time
 
 # Leer datos desde archivo
 lista = []
-with open('C:/Users/DEATH/Desktop/IA/Tarea_2/data1.txt') as archivo:
+with open('IA\Misael_2025_1S\Tarea_2\data1.txt') as archivo:
     for i in archivo:
         lista.append(i.strip(" ").strip("\n").split(","))
 
